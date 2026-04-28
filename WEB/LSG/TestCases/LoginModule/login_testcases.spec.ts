@@ -1,47 +1,40 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, Page } from '@playwright/test';
 import { LoginLocators } from '../../PageObjects/LoginModule/login_locators';
 import { getExcelData } from '../../Resources/LoginModule/login_resources';
 import path from 'path';
-import { time } from 'console';
+
+// Force serial mode
+test.describe.configure({ mode: 'serial' });
 
 test.describe('LSG Login Module - Excel Data Driven', () => {
-  
-  // Define variables here
   let testData: any[] = [];
-  
-  // Note: Based on your sidebar, the file is "EmailDataList.xlsx - Sheet1.csv"
-  // If you renamed it to EmailData.xlsx, ensure this string is exact.
+  let page: Page; 
+  let context: any;
   const excelFilePath = path.resolve(__dirname, '../../TestData/EmailDataList.xlsx');
 
-  test.beforeAll(() => {
+  test.beforeAll(async ({ browser }) => {
     try {
       testData = getExcelData(excelFilePath);
     } catch (error) {
-      console.error("FAILED TO LOAD EXCEL DATA. Tests will fail. Error:", error);
+      console.error("FAILED TO LOAD EXCEL DATA:", error);
     }
-  });
 
-  test.beforeEach(async ({ page, context }) => {
+    // Initialize shared context and page
+    context = await browser.newContext();
     await context.addCookies([{ name: 'allowCookie', value: '1', domain: 'stg-sg.sportz.io', path: '/' }]);
+    page = await context.newPage();
+    
     await page.goto('https://stg-sg.sportz.io', { timeout: 60000 });
     await page.locator(LoginLocators.loginEntryBtn).click();
-
   });
 
-  // P1: Using data for Adam (ID 2 in your Excel)
-  test('P1: Valid Email Login', async ({ page }) => {
-    // Find the specific row for Adam
-    const userData = testData.find((row: any) => row.id == '2');
-
-    await page.locator(LoginLocators.emailInput).fill(userData.email);
-    await page.locator(LoginLocators.passwordInput).fill(userData.password);
-    await page.locator(LoginLocators.submitBtn).click();
-    
-    await expect(page.locator(LoginLocators.userProfileCard)).toBeVisible({ timeout: 30000 });
+  test.afterAll(async () => {
+    await page.close();
+    await context.close();
   });
 
-  // P2: Validation with Empty Email (Pass password from Excel, but leave email empty)
-  test('P2: Validation with Empty Email', async ({ page }) => {
+  // P1: Validation with Empty Email (Pass password from Excel, but leave email empty)
+  test('P1: Validation with Empty Email', async () => {
     const userData = testData.find((row: any) => row.id == '2'); // Using the first user in the list
 
     await page.locator(LoginLocators.emailInput).fill(''); // Explicitly empty
@@ -51,8 +44,8 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
     await expect(page.locator(LoginLocators.emailValidationError)).toBeVisible();
   });
 
-  // P3: Validation with Empty Password (Pass email from Excel, leave password empty)
-  test('P3: Validation with Empty Password', async ({ page }) => {
+  // P2: Validation with Empty Password (Pass email from Excel, leave password empty)
+  test('P2: Validation with Empty Password', async () => {
     const userData = testData.find((row: any) => row.id == '2');
 
     await page.locator(LoginLocators.emailInput).fill(userData.email);
@@ -62,16 +55,18 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
     await expect(page.locator(LoginLocators.passwordValidationError)).toBeVisible();
   });
 
-  // P4: Validation with both empty (No data needed from Excel, but logic remains consistent)
-  test('P4: Validation with both EMail and Password empty', async ({ page }) => {
+  // P3: Validation with both empty (No data needed from Excel, but logic remains consistent)
+  test('P3: Validation with both EMail and Password empty', async () => {
+    await page.locator(LoginLocators.emailInput).clear();
+    await page.locator(LoginLocators.passwordInput).clear();
     await page.locator(LoginLocators.submitBtn).click();
     
     await expect(page.locator(LoginLocators.emailValidationError)).toBeVisible();
     await expect(page.locator(LoginLocators.passwordValidationError)).toBeVisible();
   });
 
-  // P5: Validation with invalid credentials to check error handling 
-  test('P5: Validation with invalid credentials', async ({ page }) => {
+  // P4: Validation with invalid credentials to check error handling 
+  test('P4: Validation with invalid credentials', async () => {
     // Find the specific row for Adam
     const userData = testData.find((row: any) => row.id == '2');
 
@@ -87,4 +82,17 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
     await page.locator(LoginLocators.submitBtn).click();
     await expect(page.locator(LoginLocators.invalidCredentialsError)).toBeVisible({ timeout: 30000 });
   });
+
+  // P5: Using data for Adam (ID 2 in your Excel)
+  test('P5: Valid Email Login', async () => {
+    // Find the specific row for Adam
+    const userData = testData.find((row: any) => row.id == '2');
+
+    await page.locator(LoginLocators.emailInput).fill(userData.email);
+    await page.locator(LoginLocators.passwordInput).fill(userData.password);
+    await page.locator(LoginLocators.submitBtn).click();
+    
+    await expect(page.locator(LoginLocators.userProfileCard)).toBeVisible({ timeout: 30000 });
+  });
+
 });
