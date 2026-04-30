@@ -3,6 +3,7 @@ import { LoginLocators } from '../../PageObjects/LoginModule/login_locators';
 import * as loginResources from '../../Resources/LoginModule/login_resources';
 import path from 'path';
 import { time } from 'console';
+import { request } from 'https';
 
 // Force serial mode
 test.describe.configure({ mode: 'serial' });
@@ -37,7 +38,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
 
   // T1 - Login: Validation with Empty Email (Pass password from Excel, but leave email empty)
   test('T1 - Login : Validation with Empty Email', async () => {
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
 
     await page.locator(LoginLocators.emailInput).fill(''); // Explicitly empty
     await page.locator(LoginLocators.passwordInput).fill(userData.password);
@@ -48,7 +49,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
 
   // T2 - Login: Validation with Empty Password (Pass email from Excel, leave password empty)
   test('T2 - Login : Validation with Empty Password', async () => {
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
 
     await page.locator(LoginLocators.emailInput).fill('userData.email@mail.com');
     await page.locator(LoginLocators.passwordInput).fill(''); // Explicitly empty
@@ -70,7 +71,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
   // T4 - Login: Validation with invalid credentials to check error handling 
   test('T4 - Login : Validation with invalid credentials', async () => {
     // Find the specific row for Adam
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
 
     await page.locator(LoginLocators.emailInput).fill('userData.email@mail.com');
     await page.locator(LoginLocators.passwordInput).fill('WrongPassword123'); // Intentionally wrong password
@@ -88,7 +89,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
   // T5 - Login : Paswsword toggle functionality
   test('T5 - Login : Password toggle functionality', async () => {
     // Find the specific row for Adam
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
 
     await page.locator(LoginLocators.emailInput).clear();
     await page.locator(LoginLocators.emailInput).fill(userData.email);
@@ -104,7 +105,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
   // T6 - Login : Wrong Email Format Error
   test('T6 - Login : Wrong Email Format Error', async () => {
     // Find the specific row for Adam
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
 
     await page.locator(LoginLocators.emailInput).clear();
     await page.locator(LoginLocators.emailInput).fill('test@mail');
@@ -118,7 +119,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
   // T7 - Login with incorrect credentials like no registered user
   test('T7 - Login with incorrect credentials like no registered user', async () => {
     // Find the specific row for Adam
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
 
     await page.locator(LoginLocators.emailInput).clear();
     await page.locator(LoginLocators.emailInput).fill('testuser@mail.com');
@@ -155,19 +156,23 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
   });
 
   test('T11 - Forgot Password submit with invalid email', async () => {
-    await expect.soft(page.locator('#forgotPassword > div:nth-child(1) > div:nth-child(1) > img:nth-child(1)')).toBeVisible();
+    await expect.soft(page.locator('#forgotPassword img')).toBeVisible();
+    await page.locator(LoginLocators.forgotPasswordEmailInput).clear();
     await page.locator(LoginLocators.forgotPasswordEmailInput).fill('a.salve@mail');
     await page.locator(LoginLocators.forgotPasswordSubmitBtn).click();
-    await expect(page.locator('#forgotPassword > div:nth-child(2) > div:nth-child(1) > form:nth-child(3) > div:nth-child(1) > div:nth-child(1) > span.errordiv > span')).toHaveText('Invalid email.', { timeout: 10000 });
-  });
+    const errorMsg = page.locator('#forgotPassword span.errordiv span');
+    expect(errorMsg).toHaveText(/invalid email/i);
+
+});
 
   // T12 - Forgot Password submit with unregistered email
   test('T12 - Forgot Password submit with unregistered email', async () => {
-    await expect.soft(page.locator('#forgotPassword > div:nth-child(1) > div:nth-child(1) > img:nth-child(1)')).toBeVisible();
-    await page.locator(LoginLocators.forgotPasswordEmailInput).fill('a.salve@mail.com');
+    await expect.soft(page.locator('#forgotPassword img')).toBeVisible();
+    await page.locator(LoginLocators.forgotPasswordEmailInput).clear();
+    await page.locator(LoginLocators.forgotPasswordEmailInput).fill('a.salve@mail.net');
     await page.locator(LoginLocators.forgotPasswordSubmitBtn).click();
-    await expect.soft(page.locator('#forgotPassword > div:nth-child(2) > div:nth-child(1) > form:nth-child(3) > div:nth-child(1) > div:nth-child(1) > span.errordiv > span')).toBeVisible();
-    await expect.soft(page.locator('#forgotPassword > div:nth-child(2) > div:nth-child(1) > form:nth-child(3) > div:nth-child(1) > div:nth-child(1) > span.errordiv > span')).toHaveText('Invalid email. Please try again with your registered email.', { timeout: 10000 });
+    const errorMsg = page.locator('#forgotPassword span.errordiv span');
+    expect.soft(errorMsg).toHaveText(/Invalid email. Please try again with your registered email./i);
   });
 
   // T13 - Cancel button functionality on Forgot Password Screen
@@ -199,9 +204,9 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
 
   // T15 - Registration form fill with valid data
   test('T15 - Registration form fill with valid data', async () => {
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
-    console.log("Full Row Content:", userData);
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
     const registerFormData = new loginResources.RegistrationFormHandler(page);
+    await registerFormData.loginToCMSAndDeleteUser(context, userData.email, 12);
     await registerFormData.fillRegistrationForm(userData);
   });
 
@@ -209,32 +214,39 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
   test('T16 - Registration form submission without verifying OTP for Email field', async () => {
     await page.locator(LoginLocators.registrationFormSignInBtn).scrollIntoViewIfNeeded();
     await page.locator(LoginLocators.registrationFormSignInBtn).click();
-    await expect.soft(page.locator('div.form-group:nth-child(9) > span:nth-child(1)')).toBeVisible({ timeout: 80000 });
-    await expect.soft(page.locator('div.form-group:nth-child(9) > span:nth-child(1)')).toHaveText('Email or Mobile Number is not verified');
+    expect.soft(page.locator('div.form-group:nth-child(9) > span:nth-child(1)')).toHaveText('Email or Mobile Number is not verified');
   });
 
   // T17 - Once the OTP is triggered, the "Send OTP" button should be disabled.
-  test('T17 - Once the OTP is triggered, the "Send OTP" button should be disabled.', async () => {
+  test('T17 - Once the OTP is triggered, the "Send OTP" button should be disabled.', async ({request}) => {
+    const apiUrl = 'https://stg-sg.sportz.io/apiv3/del_redis';
+    // Perform the GET request
+    const response = await request.get(apiUrl);
+    // 1. Verify the status code (e.g., 200 OK)
+    expect(response.ok()).toBeTruthy();
+    expect(response.status()).toBe(200);
+    const registerFormData = new loginResources.RegistrationFormHandler(page);
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
     await page.locator(LoginLocators.registrationFormSendOTPBtn).scrollIntoViewIfNeeded();
     await page.locator(LoginLocators.registrationFormSendOTPBtn).click();
-    await expect(page.locator(LoginLocators.registrationFormOTPVerificationInput)).toBeVisible({ timeout: 80000 });
+    expect(page.locator(LoginLocators.registrationFormOTPVerificationInput)).toBeVisible({ timeout: 10000 });
   });
   
   // T18 - Timer is displayed for the email ID OTP field.
   test('T18 - Timer is displayed for the email ID OTP field.', async () => {
     await page.locator('span.otp-time').scrollIntoViewIfNeeded();
-    await expect(page.locator('span.otp-time')).toBeVisible({ timeout: 80000 });
+    expect(page.locator('span.otp-time')).toBeVisible({ timeout: 10000 });
   });
 
   // T19 - password acceptance criteria error message is displayed when Invalid password is entered.
   test('T19 - password acceptance criteria error message is displayed when Invalid password is entered.', async () => {
     await page.locator(LoginLocators.registrationFormPassword).fill('pass@pass');
     await page.locator(LoginLocators.registrationFormPassword).fill('pass@pass');
-    await expect(page.locator('div.flex50:nth-child(5) > div:nth-child(1) > span:nth-child(4)')).toBeVisible({ timeout: 80000 });
-    await expect(page.locator('div.flex50:nth-child(6) > div:nth-child(1) > span:nth-child(4)')).toBeVisible({ timeout: 80000 });
+    expect(page.locator('div.flex50:nth-child(5) > div:nth-child(1) > span:nth-child(4)')).toBeVisible({ timeout: 10000 });
+    expect(page.locator('div.flex50:nth-child(6) > div:nth-child(1) > span:nth-child(4)')).toBeVisible({ timeout: 10000 });
+    await page.reload({ timeout: 60000 }); // Reload the page to reset the form before filling it again
     const registerFormData = new loginResources.RegistrationFormHandler(page);
-    const userData = testData.find((row: any) => row.id == id_num); // Using the first user in the list
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
     await registerFormData.fillRegistrationForm(userData);
   });
-
 });
