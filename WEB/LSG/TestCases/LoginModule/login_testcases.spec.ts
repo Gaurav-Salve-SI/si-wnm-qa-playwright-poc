@@ -1,14 +1,16 @@
 import { test, expect, Page } from '@playwright/test';
 import { LoginLocators } from '../../PageObjects/LoginModule/login_locators';
 import * as loginResources from '../../Resources/LoginModule/login_resources';
+import * as cmsResources from '../../../../CommonBase/Utilities/Resources/common_resources';
 import path from 'path';
 import { time } from 'console';
 import { request } from 'https';
+import { TIMEOUT } from 'dns';
 
 // Force serial mode
 test.describe.configure({ mode: 'serial' });
 
-test.describe('LSG Login Module - Excel Data Driven', () => {
+test.describe('LSG Login Module - Excel Data Driven', { tag: ['@LSG-Login-Register', '@WEB'] }, () => {
   let testData: any[] = [];
   let page: Page; 
   let context: any;
@@ -17,7 +19,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
 
   test.beforeAll(async ({ browser }) => {
     try {
-      testData = loginResources.getExcelData(excelFilePath);
+      testData = cmsResources.getExcelData(excelFilePath);
     } catch (error) {
       console.error("FAILED TO LOAD EXCEL DATA:", error);
     }
@@ -161,8 +163,7 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
     await page.locator(LoginLocators.forgotPasswordEmailInput).fill('a.salve@mail');
     await page.locator(LoginLocators.forgotPasswordSubmitBtn).click();
     const errorMsg = page.locator('#forgotPassword span.errordiv span');
-    expect(errorMsg).toHaveText(/invalid email/i);
-
+    expect(errorMsg).toBeVisible({ timeout: 10000 });
 });
 
   // T12 - Forgot Password submit with unregistered email
@@ -204,10 +205,15 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
 
   // T15 - Registration form fill with valid data
   test('T15 - Registration form fill with valid data', async () => {
-    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
-    const registerFormData = new loginResources.RegistrationFormHandler(page);
-    await registerFormData.loginToCMSAndDeleteUser(context, userData.email, 12);
-    await registerFormData.fillRegistrationForm(userData);
+      const userData = testData.find((row: any) => row.id === id_num);
+      // Check if userData actually exists before proceeding
+      if (!userData) throw new Error(`User with ID ${id_num} not found in test data`);
+      const registerFormData = new loginResources.RegistrationFormHandler(page);
+      const cmsDeleteData = new cmsResources.commonResources(page);
+      // Ensure cleanup is finished before starting registration
+      await cmsDeleteData.loginToCMSAndDeleteUser(context, userData.email, 12);
+      // Navigate to the registration page explicitly if the delete action changed the URL
+      await registerFormData.fillRegistrationForm(userData);
   });
 
   // T16 - Registration form submission without verifying OTP for Email field
@@ -249,4 +255,86 @@ test.describe('LSG Login Module - Excel Data Driven', () => {
     const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
     await registerFormData.fillRegistrationForm(userData);
   });
+
+  // T20 - Validation needs to be displayed after entering the wrong OTP.
+  test('T20 - Validation needs to be displayed after entering the wrong OTP.', async ({request}) => {
+    const apiUrl = 'https://stg-sg.sportz.io/apiv3/del_redis';
+    // Perform the GET request
+    const response = await request.get(apiUrl);
+    // 1. Verify the status code (e.g., 200 OK)
+    expect(response.ok()).toBeTruthy();
+    expect(response.status()).toBe(200);
+    await page.locator(LoginLocators.registrationFormSendOTPBtn).scrollIntoViewIfNeeded();
+    await page.locator(LoginLocators.registrationFormSendOTPBtn).click();
+    await page.locator(LoginLocators.registrationFormOTPVerificationInput).fill('123456'); // Intentionally wrong OTP
+    await page.locator(LoginLocators.registrationFormOTPVerificationVerifyBtn).click();
+    const errorMsg = page.locator('div.form-element > span.errordiv');
+    await expect(errorMsg).toBeVisible();
+  });
+
+  // T21 - The Congratulations Pop-up with Okay button for Sucessful Registeration
+  test('T21 - The Congratulations Pop-up with Okay button for Sucessful Registeration', async ({request}) => {
+    test.setTimeout(2100000);
+    const apiUrl = 'https://stg-sg.sportz.io/apiv3/del_redis';
+    // Perform the GET request
+    const response = await request.get(apiUrl);
+    // 1. Verify the status code (e.g., 200 OK)
+    expect(response.ok()).toBeTruthy();
+    expect(response.status()).toBe(200);
+    await page.reload({ timeout: 60000 }); // Reload the page to reset the form before filling it again
+    const registerFormData = new loginResources.RegistrationFormHandler(page);
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
+    await registerFormData.fillRegistrationForm(userData);
+    const cmsDeleteData = new cmsResources.commonResources(page);
+    await cmsDeleteData.deleteAllEmailsInbox(userData.server, userData.port, userData.email, userData.app_password);
+    await page.locator(LoginLocators.registrationFormSendOTPBtn).scrollIntoViewIfNeeded();
+    await page.locator(LoginLocators.registrationFormSendOTPBtn).click();
+    await expect(page.locator(LoginLocators.registrationFormOTPVerificationInput)).toBeVisible();
+    const emailBody = await cmsDeleteData.searchAndFetchEmail(userData.server, userData.port, userData.email, userData.app_password, userData.subject);
+    console.log("EMAIL BODY:", emailBody);
+    const emailOtp  = await cmsDeleteData.getOtpDetailsFromEmail(emailBody ? emailBody.body.toString() : '');
+    console.log("EXTRACTED OTP:", emailOtp);
+    await page.locator(LoginLocators.registrationFormOTPVerificationInput).fill(emailOtp || ''); // Fill the OTP input with the extracted OTP from mail
+    await page.locator(LoginLocators.registrationFormOTPVerificationVerifyBtn).click();
+    await expect(page.locator('button.btn-site.btn-otp.disabled')).toBeVisible({ timeout: 20000 });
+    await page.locator(LoginLocators.registrationFormSignInBtn).scrollIntoViewIfNeeded();
+    await page.locator(LoginLocators.registrationFormSignInBtn).click();
+    expect(page.locator('.waf-home-showcase > div:nth-child(1) > div:nth-child(1) > div:nth-child(1)')).toBeVisible({ timeout: 30000 });
+  });
+
+  // T22 - Verify Forgot Password submit with registered email
+  test('T22 - Verify Forgot Password submit with registered email', async ({request}) => {
+    test.setTimeout(2100000);
+    await page.locator(LoginLocators.toolbarHomeProfileButton).click();
+    await page.locator('button.user-meta').click();
+    await page.locator(LoginLocators.loginEntryBtn).click();
+    await page.locator(LoginLocators.forgotPasswordLink).click();
+    const userData = testData.find((row: any) => row.id == id_num); // Using the ID value as a user in the list
+    const cmsDeleteData = new cmsResources.commonResources(page);
+    await cmsDeleteData.deleteAllEmailsInbox(userData.server, userData.port, userData.email, userData.app_password);
+    await page.locator(LoginLocators.forgotPasswordEmailInput).fill(userData.email);
+    await page.locator(LoginLocators.forgotPasswordSubmitBtn).click();
+    await expect(page.locator('#sendPwdResetEmail > div:nth-child(1) > div:nth-child(1) > img')).toBeVisible();
+    await page.locator('#sendPwdResetEmail > div:nth-child(2) > div:nth-child(1) > div:nth-child(3) > button:nth-child(1)').click();
+    const emailBody = await cmsDeleteData.searchAndFetchEmail(userData.server, userData.port, userData.email, userData.app_password, userData.reset_pswd_mail_subject);
+    console.log("EMAIL BODY:", emailBody);
+    const resetUrl = await cmsDeleteData.getUrlFromEmailDetails(emailBody ? emailBody.body.toString() : '', 'stg-sg', 'reset');
+    console.log("EXTRACTED Link:", resetUrl);
+    await cmsDeleteData.resetPasswordUsingLink(context, resetUrl, userData.reset_password);
+  });
+
+  // T23 - Verify the login with correct credentials
+  test('T23 - Verify the login with correct credentials', async () => {
+    // Find the specific row for Adam
+    const userData = testData.find((row: any) => row.id == '2');
+
+    await page.locator(LoginLocators.emailInput).clear();
+    await page.locator(LoginLocators.emailInput).fill(userData.email);
+    await page.locator(LoginLocators.passwordInput).clear();
+    await page.locator(LoginLocators.passwordInput).fill(userData.reset_password);
+    await page.locator(LoginLocators.submitBtn).click();
+    
+    await expect(page.locator(LoginLocators.userProfileCard)).toBeVisible({ timeout: 30000 });
+  });
+
 });

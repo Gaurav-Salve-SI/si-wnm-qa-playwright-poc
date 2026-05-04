@@ -19,22 +19,12 @@ export const LoginLocators =
     registrationFormSignInBtn: 'button.btn-site.btn-register',
     registrationFormSendOTPBtn: 'button.btn-site.btn-otp',
     registrationFormOTPVerificationInput: 'input#otpverification',
+    registrationFormOTPVerificationVerifyBtn: 'button.btn-site.btn-otp',
     registrationFormFirstName: '#firstName',
     registrationFormLastName: '#lastName',
     registrationFormEmail: '#registerEmail',
     registrationFormPassword: '#regPassword',
     registrationFormConfirmPassword: '#regConfirmPassword',
-    registrationFormMobile: '#regMobile'
-};
-
-export const CMSLocators = {
-    cmsClientId: '//input[@id="clientid"]',
-    cmsUsername: '//input[@id="username"]',
-    cmsPassword: '//input[@id="password"]',
-    cmsLoginButton: '//input[@value="Login"]',
-    showcaseIcon: '//li[@class="nav-showcase"]/a',
-    deleteDataBtn: '//span[text()="Delete Data"]',
-    emailIdInput: '//input[@id="data_email_id"]',
-    deleteUserBtn: '//button[@name="userjson"]',
-    deletedMsg: '//p[text()="Deleted Successfully"]'
+    registrationFormMobile: '#regMobile',
+    toolbarHomeProfileButton: 'button.btn.btn-toggle-profile',
 };
