@@ -1,0 +1,19 @@
+All emails marked for deletion.
+All emails deleted and logged out.
+Polling for email... Time elapsed: 3125ms
+Fetching UID: 1
+Message source fetched successfully.
+EMAIL BODY: {
+  body: 'LSG\n' +
+    '[https://www.lucknowsupergiants.in/static-assets/images/cssimages/svg/logo.svg?v=7.3]\n' +
+    '\n' +
+    '  EMAIL VERIFICATION   Hi ,   To ensure that you never miss out on any important\n' +
+    'updates, kindly verify your email address now.    \n' +
+    '\n' +
+    'OTP: 612327   Thank you, Lucknow Super Giants Team  \n' +
+    '\n' +
+    '[https://mandrillapp.com/track/open.php?u=31415816&id=6ce2095a811748e289688a15cff5fe40]',
+  receivedTime: '2026-05-06T13:34:48.000Z',
+  sender: '"Lucknow Super Giants" <no-reply@lucknowsupergiants.in>'
+}
+EXTRACTED OTP: 612327

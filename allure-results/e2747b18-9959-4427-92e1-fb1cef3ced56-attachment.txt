@@ -1,0 +1,24 @@
+All emails marked for deletion.
+All emails deleted and logged out.
+Polling for email... Time elapsed: 3145ms
+Fetching UID: 1
+Message source fetched successfully.
+EMAIL BODY: {
+  body: 'LSG [https://stg-sg.sportz.io/static-assets/images/cssimages/logo.png]\n' +
+    '\n' +
+    '  PASSWORD RESET   Hi Frank,   We have received a request to reset the password\n' +
+    'for your Lucknow Super Giants account  \n' +
+    '\n' +
+    'RESET YOUR PASSWORD\n' +
+    '[https://mandrillapp.com/track/click/31415816/stg-sg.sportz.io?p=eyJzIjoiSFpRaUZudWJ2VU5HZmZPMzNzSTJZbjFDdEFBIiwidiI6MiwicCI6IntcInVcIjozMTQxNTgxNixcInZcIjoyLFwidXJsXCI6XCJodHRwczpcXFwvXFxcL3N0Zy1zZy5zcG9ydHouaW8_cmVzZXQ9YTg1MmJkZjUtMmM2ZS00ODg2LWFlNzgtZDI0N2MyZDQyNGZhXCIsXCJpZFwiOlwiNmQ1OTAwY2NhMGM0NDA4MmEwMzYxOTlhZDRlOGVhOWJcIixcInVybF9pZHNcIjpbXCJkM2I2MTBlMWZkNGViNjNmZjVmMjc1NGI5MjRkYTY1ZmI4ZGY1NzkyXCJdLFwibXNnX3RzXCI6MTc3ODA3NDU3OX0ifQ]\n' +
+    '\n' +
+    '  OR   copy and paste this link into the browser:  \n' +
+    'https://stg-sg.sportz.io?reset=a852bdf5-2c6e-4886-ae78-d247c2d424fa\n' +
+    '[https://mandrillapp.com/track/click/31415816/stg-sg.sportz.io?p=eyJzIjoiSFpRaUZudWJ2VU5HZmZPMzNzSTJZbjFDdEFBIiwidiI6MiwicCI6IntcInVcIjozMTQxNTgxNixcInZcIjoyLFwidXJsXCI6XCJodHRwczpcXFwvXFxcL3N0Zy1zZy5zcG9ydHouaW8_cmVzZXQ9YTg1MmJkZjUtMmM2ZS00ODg2LWFlNzgtZDI0N2MyZDQyNGZhXCIsXCJpZFwiOlwiNmQ1OTAwY2NhMGM0NDA4MmEwMzYxOTlhZDRlOGVhOWJcIixcInVybF9pZHNcIjpbXCJkM2I2MTBlMWZkNGViNjNmZjVmMjc1NGI5MjRkYTY1ZmI4ZGY1NzkyXCJdLFwibXNnX3RzXCI6MTc3ODA3NDU3OX0ifQ]\n' +
+    '  Thank you, Lucknow Super Giants Team  \n' +
+    '\n' +
+    '[https://mandrillapp.com/track/open.php?u=31415816&id=6d5900cca0c44082a036199ad4e8ea9b]',
+  receivedTime: '2026-05-06T13:36:19.000Z',
+  sender: '"Lucknow Super Giants" <no-reply@lucknowsupergiants.in>'
+}
+EXTRACTED Link: https://stg-sg.sportz.io?reset=a852bdf5-2c6e-4886-ae78-d247c2d424fa

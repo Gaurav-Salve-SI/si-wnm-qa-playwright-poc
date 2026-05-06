@@ -1,0 +1,10 @@
+{
+  id: '12',
+  cms_clientid: 'lsg01',
+  cms_username: 'delete_user_lsg',
+  cms_password: 'Delete@1234',
+  cms_url: 'https://beta-wafcms.sportz.io/login/login?refval',
+  browser: 'chrome'
+}
+Mobile number deleted successfully
+CMS Tab closed. Returning to main application execution.
