@@ -42,7 +42,7 @@ export class commonResources
     async   loginToCMSAndDeleteUser(context: BrowserContext, emailId: string, cmsId: any) 
     {
         let deleteData: any[] = [];
-        const excelFilePath = path.resolve(__dirname, '../../../../CMSLoginCreds.xlsx');
+        const excelFilePath = path.resolve(__dirname, '../../../CMSLoginCreds.xlsx');
         try 
         {
             deleteData = getExcelData(excelFilePath);
@@ -253,46 +253,39 @@ export class commonResources
         context: BrowserContext, 
         url: string, 
         newPassword: string
-    ): Promise<void> {
-    
-        // 1. Open the URL and catch the new tab/window
-        // Playwright handles "Switch Window" by waiting for the 'page' event
-        const [resetPage] = await Promise.all([
-            context.waitForEvent('page'),
-            context.pages()[0].goto(url) // Or however you trigger the navigation
-        ]);
+    ): Promise<void> 
+    {
+        // 1. Start listening for the new tab BEFORE navigating
+        const pagePromise = context.waitForEvent('page');
+        
+        // 2. Open the URL (This usually opens in a new tab based on your logic)
+        // If the URL opens in the CURRENT tab, don't use waitForEvent('page')
+        const newTab = await context.newPage(); 
+        await newTab.goto(url);
 
-        await resetPage.bringToFront();
+        // 3. Handle Cookie Policy (Optional)
+        await newTab.locator('button#cookie-policy-btn')
+            .click({ timeout: 3000 })
+            .catch(() => {});
 
-        // 2. Handle Cookie Policy (Ignore error if not present)
-        // .click() has a default timeout; we use a short one for optional elements
-        await resetPage.locator('button#cookie-policy-btn')
-            .click({ timeout: 5000 })
-            .catch(() => { /* Ignore error if button doesn't appear */ });
+        // 4. Input Passwords
+        await newTab.locator('input#newPassword').fill(newPassword);
+        await newTab.locator('input#confNewPassword').fill(newPassword);
 
-        // 3. Input New Password
-        // Playwright automatically waits for visibility and "readiness"
-        const newPassInput = resetPage.locator('input#newPassword');
-        await newPassInput.fill(newPassword);
-
-        // 4. Input Confirm Password
-        const confPassInput = resetPage.locator('input#confNewPassword');
-        await confPassInput.fill(newPassword);
-
-        // 5. Click Submit
+       // 5. Click Submit
         // Using your specific CSS selector
-        await resetPage.locator('div.form-btn-group:nth-child(3) > div:nth-child(2) > button:nth-child(1)')
+        await newTab.locator('div.form-btn-group:nth-child(3) > div:nth-child(2) > button:nth-child(1)')
             .click();
 
         // 6. Optional: Wait for navigation or a success message instead of a hard sleep
-        await resetPage.waitForLoadState('networkidle');
-
+        await newTab.locator('#regComplete > div:nth-child(2) > div:nth-child(1) > div:nth-child(3) > button:nth-child(1)').click();
+        await newTab.waitForLoadState('load');
         // 7. Close the reset tab to "Switch Window MAIN"
         if (this.page && !this.page.isClosed()) {
                 await this.page.bringToFront();
             }
-            if (resetPage) {                          // Close the CMS tab to free up resources
-                await resetPage.close();
+            if (newTab) {                          // Close the CMS tab to free up resources
+                await newTab.close();
             }
     }
 }
