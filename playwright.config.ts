@@ -50,7 +50,7 @@ export default defineConfig({
         viewport: null, 
       },
     },
-
+/*
     {
       name: 'firefox',
       use: { 
