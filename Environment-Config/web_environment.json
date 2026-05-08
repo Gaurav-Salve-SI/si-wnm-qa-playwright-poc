@@ -1,0 +1,10 @@
+{
+  "web_data": [
+    {
+      "staging_GT_application_URL" : "https://stg-gujarat-titans.sportz.io/",
+      "production_GT_application_URL" : "https://www.gujarattitansipl.com/?cache-buster=true",
+      "staging_redis_clear_api" : "https://stg-gujarat-titans.sportz.io/apiv3/del_redis"
+    }
+  ]
+}
+

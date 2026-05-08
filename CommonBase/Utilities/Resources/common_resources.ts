@@ -28,17 +28,86 @@ interface EmailResult {
 export class commonResources 
 {
     readonly page: Page;
-    /**
-     * Deletes a user from the CMS using their email.
-     * @param context - The browser context to handle multiple windows.
-     * @param emailId - The email of the user to delete.
-     * @param cmsId - The ID used to fetch credentials.
-     */
+
     constructor(page: Page) 
     {
         this.page = page;
     }
 
+    async openBrowserAndNavigateToURL(url: string): Promise<Page> {
+        if (!this.page) {
+            throw new Error('Page instance is not initialized in commonResources');
+        }
+
+        await this.page.goto(url, { timeout: 60000, waitUntil: 'domcontentloaded' });
+        return this.page;
+    }
+
+    async navigateToLogin(locators: any): Promise<Page> 
+    {
+        if (!this.page) {
+            throw new Error('Page instance is not initialized in commonResources');
+        }
+        // Access properties directly from the passed object
+        await this.page.click(locators.login_button);
+        return this.page;
+    }
+
+    async enterMobileNumber(locators: any, mobileNum: string): Promise<Page> 
+    {
+        if (!this.page) {
+            throw new Error('Page instance is not initialized in commonResources');
+        }
+        // Ensure mobileNum is a valid string before filling
+        if (typeof mobileNum === 'string' && mobileNum.trim()) {
+            await this.page.locator(locators.mobile_number).clear();
+            await this.page.fill(locators.mobile_number, mobileNum);
+            return this.page;
+        } else {
+            throw new Error('Invalid mobile number: must be a non-empty string');
+        }
+    }
+
+    async resendOTPFunctionality(locators: any): Promise<Page>
+    {
+        if (!this.page) {
+            throw new Error('Page instance is not initialized in commonResources');
+        }
+                expect(this.page.locator(locators.resend_otp).isVisible({timeout: 700000})).toBeTruthy();
+                await this.page.locator(locators.resend_otp).click();
+                await this.page.locator(locators.time_remaining).isVisible();
+                
+        return this.page;
+    }
+
+    async enterMobileAndVerifyOTP(locators: any , mobileNum: string): Promise<Page>
+    {
+        if (!this.page) {
+            throw new Error('Page instance is not initialized in commonResources');
+        }
+        await this.enterMobileNumber(locators, mobileNum);
+        await this.page.locator(locators.send_otp).click();
+        await this.page.locator(locators.acknowledge).click();
+        await this.page.locator(locators.desclaimer).click();
+        await this.page.locator(locators.send_otp).click();
+        const staticOTP = await this.createStaticOTPForNumber(mobileNum);
+        await this.page.locator(locators.enter_otp).fill(staticOTP);
+        return this.page;
+    }
+
+    async createStaticOTPForNumber(mobileNum: string)
+    {
+        const lastSix: string = mobileNum.slice(-6);
+        return lastSix;
+    }
+    
+    /**
+     * Deletes a user from the CMS using their email.
+     * @param context - The browser context to handle multiple windows.
+     * @param emailId - The email of the user to delete.
+     * @param cmsId - The ID used to fetch credentials.
+     * @param mobileNum - The mobile number used to fetch credentials.
+     */
     async   loginToCMSAndDeleteUser(context: BrowserContext, emailId: string, cmsId: any) 
     {
         let deleteData: any[] = [];
@@ -74,6 +143,68 @@ export class commonResources
         // 5. Perform Deletion
         await cmsPage.waitForSelector(CMSLocators.emailIdInput);
         await cmsPage.fill(CMSLocators.emailIdInput, emailId);
+        await cmsPage.click(CMSLocators.deleteUserBtn);
+
+        // 6. Verification & Error Handling
+        try 
+        {
+            // Attempt to find the success message
+            await cmsPage.waitForSelector(CMSLocators.deletedMsg, { 
+                state: 'visible', 
+                timeout: 10000 
+            });
+            console.log('Mobile number deleted successfully');
+        } catch (error) {
+            // By simply logging and NOT throwing, the execution continues
+            console.warn('User deletion message not found. The user might not exist or the UI failed. Proceeding anyway...');
+        } finally {
+            // This block runs regardless of whether the try succeeded or the catch was triggered
+            // Explicitly focus back on your main registration tab
+            if (this.page && !this.page.isClosed()) {
+                await this.page.bringToFront();
+            }
+            if (cmsPage) {                          // Close the CMS tab to free up resources
+                await cmsPage.close();
+            }
+            console.log('CMS Tab closed. Returning to main application execution.');
+        }    
+    }
+
+    async   loginToCMSAndDeleteMobileUser(context: BrowserContext, mobileNum: any, cmsId: any) 
+    {
+        let deleteData: any[] = [];
+        const excelFilePath = path.resolve(__dirname, '../../../CMSLoginCreds.xlsx');
+        try 
+        {
+            deleteData = getExcelData(excelFilePath);
+        } catch (error) 
+        {
+            console.error("FAILED TO LOAD EXCEL DATA:", error);
+        }
+        const deleteCreds = deleteData.find((row: any) => row.id == cmsId); // Using the cmsID value in the sheet to fetch credentials
+        console.log(deleteCreds);
+        const cmsPage = await context.newPage();
+        await cmsPage.goto(deleteCreds.cms_url, { timeout: 120000, waitUntil: 'domcontentloaded' });
+
+
+        // 3. Login Process
+        await cmsPage.waitForSelector(CMSLocators.cmsClientId, { state: 'visible', timeout: 30000 });
+        await cmsPage.fill(CMSLocators.cmsClientId, deleteCreds.cms_clientid);
+        await cmsPage.fill(CMSLocators.cmsUsername, deleteCreds.cms_username);
+        await cmsPage.fill(CMSLocators.cmsPassword, deleteCreds.cms_password);
+        
+        await cmsPage.click(CMSLocators.cmsLoginButton);
+
+        // 4. Navigate to Delete Section
+        await cmsPage.waitForSelector(CMSLocators.showcaseIcon, { state: 'visible', timeout: 60000 });
+        await cmsPage.click(CMSLocators.showcaseIcon);
+
+        await cmsPage.waitForSelector(CMSLocators.deleteDataBtn, { state: 'visible', timeout: 60000 });
+        await cmsPage.click(CMSLocators.deleteDataBtn);
+
+        // 5. Perform Deletion
+        await cmsPage.waitForSelector(CMSLocators.mobile_num_input);
+        await cmsPage.fill(CMSLocators.mobile_num_input, mobileNum);
         await cmsPage.click(CMSLocators.deleteUserBtn);
 
         // 6. Verification & Error Handling
