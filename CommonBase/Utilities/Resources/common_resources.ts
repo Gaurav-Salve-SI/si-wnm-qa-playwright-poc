@@ -5,6 +5,7 @@ import { ImapFlow } from 'imapflow';
 import { simpleParser } from 'mailparser'; // Highly recommended for parsing email bodiesnpm install mailparser
 import { Page, BrowserContext, expect } from '@playwright/test';
 import { CMSLocators } from '../PageObjects/common_locators';
+import { time } from 'console';
 
 export function getExcelData(filePath: string, sheetName: string = 'Sheet1') 
 {
@@ -23,6 +24,22 @@ interface EmailResult {
     body: string;
     receivedTime: string | null;
     sender: string | null;
+}
+
+interface UserData {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+    dateOfBirth?: string;
+    country?: string;
+    state?: string;
+    city?: string;
+    zipCode?: string;
+    gender?: string;
+    jerseyNo?: string;
+    jerseyName?: string;
+    referralCode?: string;
+    favouritePlayer?: string;
 }
 
 export class commonResources 
@@ -418,5 +435,72 @@ export class commonResources
             if (newTab) {                          // Close the CMS tab to free up resources
                 await newTab.close();
             }
+    }
+
+    async selectOptionFromDropdown(dropdownLocator: string, optionValue: string): Promise<void> {
+        await this.page.click(dropdownLocator);
+        // Playwright handles wait for elements automatically, but we can add a small delay if the UI is slow
+        await this.page.waitForTimeout(500);
+        // Dynamically build the locator (adjust template literal to match your HTML structure)
+        const dynamicLocator = `text="${optionValue}"`; 
+        
+        await this.page.mouse.wheel(0, 100);
+        await this.page.hover(dynamicLocator);
+        await this.page.click(dynamicLocator);
+        await this.page.waitForTimeout(500);
+    }
+
+    async selectGender(genderValue: any, locators: any): Promise<void> {
+        const g = genderValue.trim();
+        let locator: string | null = null;
+        if (g === 'Male') locator = locators.verify_male_selected;
+        else if (g === 'Female') locator = locators.verify_female_selected;
+        else if (g === 'Other') locator = locators.verify_other_selected;
+
+        if (locator) {
+            await this.page.click(locator);
+        }
+    }
+
+    async fillPersonalDetails(userData: any, locators: any): Promise<Page> {
+        // Wait for first element with long timeout (120s as per your RF script)
+        await this.page.locator(locators.first_name).scrollIntoViewIfNeeded({ timeout: 120000 });
+
+        await this.page.fill(locators.first_name, userData.firstname);
+        await this.page.fill(locators.last_name, userData.lastname);
+        await this.page.fill(locators.email, userData.email);
+        
+        await this.page.click(locators.date_of_birth);
+        const rawDate = userData.date_of_birth.toString(); // "22081995"
+        const formattedDate = `${rawDate.substring(4, 8)}-${rawDate.substring(2, 4)}-${rawDate.substring(0, 2)}`; 
+        // Result: "1995-08-22"
+        await this.page.fill('#regDob', formattedDate);
+        await this.page.fill(locators.date_of_birth, formattedDate);
+
+        // Dropdown selections
+        await this.selectOptionFromDropdown(locators.country, userData.country);
+        await this.selectOptionFromDropdown(locators.state, userData.state);
+        await this.selectOptionFromDropdown(locators.city, userData.city);
+
+        await this.page.fill(locators.zip_code, userData.pincode);
+        
+        await this.selectGender(userData.gender, locators);
+        await this.page.fill(locators.jersey_no, userData.jersey_number);
+
+        await this.page.fill(locators.jersey_name, userData.jersey_name);
+        await this.page.locator(locators.referrel_code).scrollIntoViewIfNeeded();
+        await this.page.fill(locators.referrel_code, userData.referral_code);
+        
+        await this.page.selectOption(locators.favourite_player, { label: userData.fav_player });
+        return this.page;
+    }
+
+    async logoutFromWebsite(locators: any): Promise<Page> {
+        await this.page.waitForSelector(locators.open_menu, { timeout: 2000 });
+        await this.page.click(locators.open_menu);
+        
+        await this.page.waitForTimeout(5000); // Small delay to ensure the dropdown is fully rendered
+        await this.page.click(locators.logout);
+        return this.page;
     }
 }

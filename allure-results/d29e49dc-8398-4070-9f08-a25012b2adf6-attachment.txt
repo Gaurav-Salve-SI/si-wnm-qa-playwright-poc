@@ -1,0 +1,21 @@
+{
+  id: '2',
+  cms_clientid: 'gt01',
+  cms_username: 'User_deletion',
+  cms_password: 'User@1234',
+  description: 'RR cms delete user data',
+  cms_url: 'https://beta-wafcms.sportz.io/login/login?refval',
+  browser: 'chrome'
+}
+Mobile number deleted successfully
+CMS Tab closed. Returning to main application execution.
+{
+  id: '2',
+  cms_clientid: 'gt01',
+  cms_username: 'User_deletion',
+  cms_password: 'User@1234',
+  description: 'RR cms delete user data',
+  cms_url: 'https://beta-wafcms.sportz.io/login/login?refval',
+  browser: 'chrome'
+}
+CMS Tab closed. Returning to main application execution.
